@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OCR文字提取工具</title>
-    <script src='https://unpkg.com/tesseract.js@v4.1.1/dist/tesseract.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
     <style>
         /* 整体布局 */
         body {
@@ -268,47 +268,39 @@
     </div>
 
     <script>
-        // 初始化Tesseract和预加载模型
+        // 修改 worker 初始化和错误处理
         let worker = null;
+        let isInitializing = false;
+        let initializationAttempts = 0;
+        const MAX_INIT_ATTEMPTS = 3;
         
-        // 预加载模型
         async function initializeWorker() {
-            if (!worker) {
+            if (worker || isInitializing) return;
+            
+            try {
+                isInitializing = true;
+                initializationAttempts++;
+                
+                console.log(`Initializing worker (attempt ${initializationAttempts}/${MAX_INIT_ATTEMPTS})...`);
+                
                 worker = await Tesseract.createWorker({
                     logger: progress => {
                         console.log('Progress:', progress);
-                        const loading = document.getElementById('loading');
-                        const progressFill = document.getElementById('progressFill');
-                        const progressText = document.getElementById('progressText');
-                        
-                        // 更新进度显示
-                        let percentage = 0;
-                        switch (progress.status) {
-                            case 'loading language traineddata':
-                                percentage = progress.progress * 40;
-                                loading.children[0].textContent = '加载语言模型...';
-                                break;
-                            case 'initializing api':
-                                percentage = 40 + progress.progress * 30;
-                                loading.children[0].textContent = '初始化...';
-                                break;
-                            case 'recognizing text':
-                                percentage = 70 + progress.progress * 30;
-                                loading.children[0].textContent = '正在识别文字...';
-                                break;
-                        }
-                        
-                        // 更新进度条和百分比文本
-                        progressFill.style.width = `${percentage}%`;
-                        progressText.textContent = `${Math.round(percentage)}%`;
+                        updateProgressUI(progress);
+                    },
+                    errorHandler: error => {
+                        console.error('Tesseract error:', error);
                     }
                 });
                 
-                // 只加载简体中文
+                // 使用更保守的语言包加载方式
+                console.log('Loading language data...');
                 await worker.loadLanguage('chi_sim');
+                console.log('Initializing API...');
                 await worker.initialize('chi_sim');
                 
-                // 使用基础参数配置
+                // 使用更保守的参数配置
+                console.log('Setting parameters...');
                 await worker.setParameters({
                     tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
                     tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,
@@ -318,65 +310,82 @@
                     textord_heavy_nr: '0',
                     textord_force_make_prop_words: '1',
                     language_model_ngram_space_delimited: '0',
-                    tessedit_minimal_confidence: '60',
-                    lstm_choice_mode: '1'
+                    tessedit_minimal_confidence: '65',
+                    lstm_choice_mode: '1',
+                    debug_file: '/dev/null',
+                    debug_level: '0'
                 });
+                
+                console.log('Worker initialization completed successfully');
+                
+            } catch (error) {
+                console.error('Worker initialization error:', error);
+                worker = null;
+                
+                if (initializationAttempts < MAX_INIT_ATTEMPTS) {
+                    console.log('Retrying initialization...');
+                    setTimeout(initializeWorker, 2000); // 延迟2秒后重试
+                } else {
+                    console.error('Max initialization attempts reached');
+                    alert('初始化失败，请刷新页面重试');
+                }
+            } finally {
+                isInitializing = false;
             }
         }
-        
-        // 页面加载完成后立即初始化
-        window.addEventListener('load', initializeWorker);
 
-        // 修改图像预处理
-        function compressImage(file) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        
-                        // 保持原始分辨率，但限制最大尺寸
-                        const MAX_SIZE = 2000;
-                        if (width > MAX_SIZE || height > MAX_SIZE) {
-                            const ratio = Math.min(MAX_SIZE / width, MAX_SIZE / height);
-                            width = Math.round(width * ratio);
-                            height = Math.round(height * ratio);
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        
-                        // 简单的图像处理
-                        ctx.fillStyle = 'white';
-                        ctx.fillRect(0, 0, width, height);
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        canvas.toBlob((blob) => {
-                            resolve(blob);
-                        }, 'image/png', 1.0);
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
+        // 添加进度UI更新函数
+        function updateProgressUI(progress) {
+            const loading = document.getElementById('loading');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            let percentage = 0;
+            let statusText = '';
+            
+            switch (progress.status) {
+                case 'loading tesseract core':
+                    percentage = progress.progress * 30;
+                    statusText = '加载核心组件...';
+                    break;
+                case 'loading language traineddata':
+                    percentage = 30 + progress.progress * 40;
+                    statusText = '加载语言模型...';
+                    break;
+                case 'initializing api':
+                    percentage = 70 + progress.progress * 20;
+                    statusText = '初始化...';
+                    break;
+                case 'recognizing text':
+                    percentage = 90 + progress.progress * 10;
+                    statusText = '正在识别文字...';
+                    break;
+                default:
+                    statusText = '处理中...';
+            }
+            
+            loading.children[0].textContent = statusText;
+            progressFill.style.width = `${percentage}%`;
+            progressText.textContent = `${Math.round(percentage)}%`;
         }
 
-        // 修改文本处理部分
+        // 修改文件处理函数
         async function handleFile(file) {
             if (!file.type.startsWith('image/')) {
                 alert('请上传图片文件！');
                 return;
             }
 
-            document.getElementById('loading').style.display = 'block';
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
             
             try {
+                // 确保 worker 已初始化
                 if (!worker) {
                     await initializeWorker();
+                    if (!worker) {
+                        throw new Error('Worker initialization failed');
+                    }
                 }
                 
                 const processedImage = await compressImage(file);
@@ -423,9 +432,14 @@
                 textarea.style.height = (textarea.scrollHeight + 10) + 'px';
             } catch (error) {
                 console.error('Recognition error:', error);
-                alert('识别失败，请重试！');
+                alert('识别失败，请刷新页面后重试！');
+                // 如果出错，重置 worker
+                if (worker) {
+                    await worker.terminate();
+                    worker = null;
+                }
             } finally {
-                document.getElementById('loading').style.display = 'none';
+                loading.style.display = 'none';
             }
         }
 
@@ -512,6 +526,55 @@
             }
             // 如果包含图片，让全局粘贴处理器处理
             e.preventDefault();
+        });
+
+        // 修改图像预处理
+        function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // 保持原始分辨率，但限制最大尺寸
+                        const MAX_SIZE = 2000;
+                        if (width > MAX_SIZE || height > MAX_SIZE) {
+                            const ratio = Math.min(MAX_SIZE / width, MAX_SIZE / height);
+                            width = Math.round(width * ratio);
+                            height = Math.round(height * ratio);
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        
+                        // 简单的图像处理
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(0, 0, width, height);
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        canvas.toBlob((blob) => {
+                            resolve(blob);
+                        }, 'image/png', 1.0);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 修改页面加载事件
+        window.addEventListener('load', () => {
+            console.log('Page loaded, initializing worker...');
+            // 确保页面完全加载后再初始化
+            setTimeout(() => {
+                initializeWorker().catch(error => {
+                    console.error('Initial worker load failed:', error);
+                });
+            }, 1500);
         });
     </script>
 </body>
