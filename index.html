@@ -268,14 +268,14 @@
     </div>
 
     <script>
-        // 修改 worker 初始化和错误处理
+        // 修改 worker 初始化配置
         let worker = null;
         let isInitializing = false;
         let initializationAttempts = 0;
         const MAX_INIT_ATTEMPTS = 3;
         
         async function initializeWorker() {
-            if (worker || isInitializing) return;
+            if (worker || isInitializing) return worker;
             
             try {
                 isInitializing = true;
@@ -283,7 +283,10 @@
                 
                 console.log(`Initializing worker (attempt ${initializationAttempts}/${MAX_INIT_ATTEMPTS})...`);
                 
+                // 指定 workerPath 和 corePath
                 worker = await Tesseract.createWorker({
+                    workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/worker.min.js',
+                    corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@4.0.4/tesseract-core.wasm.js',
                     logger: progress => {
                         console.log('Progress:', progress);
                         updateProgressUI(progress);
@@ -311,12 +314,11 @@
                     textord_force_make_prop_words: '1',
                     language_model_ngram_space_delimited: '0',
                     tessedit_minimal_confidence: '65',
-                    lstm_choice_mode: '1',
-                    debug_file: '/dev/null',
-                    debug_level: '0'
+                    lstm_choice_mode: '1'
                 });
                 
                 console.log('Worker initialization completed successfully');
+                return worker;
                 
             } catch (error) {
                 console.error('Worker initialization error:', error);
@@ -324,10 +326,12 @@
                 
                 if (initializationAttempts < MAX_INIT_ATTEMPTS) {
                     console.log('Retrying initialization...');
-                    setTimeout(initializeWorker, 2000); // 延迟2秒后重试
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    return initializeWorker(); // 递归重试
                 } else {
                     console.error('Max initialization attempts reached');
                     alert('初始化失败，请刷新页面重试');
+                    throw error;
                 }
             } finally {
                 isInitializing = false;
@@ -380,12 +384,20 @@
             loading.style.display = 'block';
             
             try {
-                // 确保 worker 已初始化
+                // 确保 worker 已初始化并且可用
+                worker = await initializeWorker();
                 if (!worker) {
-                    await initializeWorker();
-                    if (!worker) {
-                        throw new Error('Worker initialization failed');
-                    }
+                    throw new Error('Worker initialization failed');
+                }
+                
+                // 测试 worker 是否可用
+                try {
+                    await worker.getWorker();
+                } catch (e) {
+                    console.error('Worker not available, reinitializing...', e);
+                    await worker.terminate();
+                    worker = null;
+                    worker = await initializeWorker();
                 }
                 
                 const processedImage = await compressImage(file);
@@ -432,11 +444,17 @@
                 textarea.style.height = (textarea.scrollHeight + 10) + 'px';
             } catch (error) {
                 console.error('Recognition error:', error);
-                alert('识别失败，请刷新页面后重试！');
-                // 如果出错，重置 worker
-                if (worker) {
-                    await worker.terminate();
-                    worker = null;
+                // 提供更详细的错误信息
+                if (error.message.includes('SetImageFile')) {
+                    alert('图片处理失败，请刷新页面后重试！');
+                    // 重新初始化 worker
+                    if (worker) {
+                        await worker.terminate();
+                        worker = null;
+                        worker = await initializeWorker();
+                    }
+                } else {
+                    alert('识别失败：' + error.message);
                 }
             } finally {
                 loading.style.display = 'none';
@@ -574,7 +592,7 @@
                 initializeWorker().catch(error => {
                     console.error('Initial worker load failed:', error);
                 });
-            }, 1500);
+            }, 2000);
         });
     </script>
 </body>
