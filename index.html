@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR文字提取工具</title>
+    <script src='https://unpkg.com/tesseract.js@v4.1.1/dist/tesseract.min.js'></script>
+    <style>
+        /* 整体布局 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f7;
+        }
+
+        /* 标题样式 */
+        h1 {
+            color: #1d1d1f;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        /* 上传区域样式 */
+        .upload-area {
+            background-color: white;
+            border: 2px dashed #86868b;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .upload-area.dragover {
+            background-color: #e8e8ed;
+            border-color: #0066cc;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #0077ed;
+        }
+
+        /* 文本框样式优化 */
+        .result-area {
+            width: 100%;
+            min-height: 200px;
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            font-size: 16px;
+            line-height: 1.8;
+            font-family: "PingFang SC", "Microsoft YaHei", monospace;
+            resize: vertical;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            letter-spacing: normal;
+            word-spacing: normal;
+            tab-size: 4;
+            -moz-tab-size: 4;
+        }
+
+        .result-area:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+        }
+
+        /* 按钮容器 */
+        .button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* 加载提示 */
+        .loading {
+            display: none;
+            color: #86868b;
+            margin: 15px 0;
+            text-align: center;
+            padding: 15px;
+            background-color: #f5f5f7;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .loading p {
+            margin: 8px 0;
+        }
+
+        /* 进度条样式 */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #e0e0e0;
+            border-radius: 3px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background-color: #0066cc;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        :root {
+            --mint-primary: #4ecca3;     /* 主要薄荷绿 */
+            --mint-light: #ebf9f5;       /* 浅薄荷绿，用于hover效果 */
+            --mint-dark: #45b892;        /* 深薄荷绿 */
+            --dark-primary: #2d3436;     /* 主要深色 */
+            --gray-100: #f7f7f7;         /* 最浅灰色 */
+            --gray-200: #edf1f2;         /* 浅灰色 */
+            --gray-400: #b0b8ba;         /* 中灰色 */
+            --gray-500: #808a8d;         /* 深灰色 */
+        }
+
+        /* 修改标题样式 */
+        h1 {
+            color: var(--mint-primary);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        /* 修改上传区域样式 */
+        .upload-area {
+            background-color: white;
+            border: 2px dashed var(--gray-400);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: var(--mint-primary);
+            background-color: var(--mint-light);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--mint-primary);
+            background-color: var(--mint-light);
+            transform: scale(1.01);
+        }
+
+        /* 修改按钮样式 */
+        .btn {
+            background-color: var(--mint-primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: var(--mint-dark);
+            transform: translateY(-1px);
+        }
+
+        /* 修改文本框样式 */
+        .result-area {
+            border: 1px solid var(--gray-200);
+        }
+
+        .result-area:focus {
+            border-color: var(--mint-primary);
+            box-shadow: 0 0 0 3px rgba(78,204,163,0.1);
+        }
+
+        /* 修改进度条样式 */
+        .progress-bar {
+            background-color: var(--gray-200);
+        }
+
+        .progress-fill {
+            background-color: var(--mint-primary);
+        }
+
+        /* 修改按钮容器样式 */
+        .button-container .btn:first-child {
+            background-color: var(--gray-400);
+        }
+
+        .button-container .btn:first-child:hover {
+            background-color: var(--mint-primary);
+        }
+
+        /* 添加一些薄荷绿的点缀 */
+        ::selection {
+            background-color: var(--mint-light);
+            color: var(--mint-primary);
+        }
+
+        .loading p:first-child {
+            color: var(--mint-primary);
+            font-weight: 500;
+        }
+
+        /* 添加文本框滚动条样式 */
+        .result-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .result-area::-webkit-scrollbar-track {
+            background: var(--gray-100);
+            border-radius: 4px;
+        }
+
+        .result-area::-webkit-scrollbar-thumb {
+            background: var(--mint-primary);
+            border-radius: 4px;
+        }
+
+        .result-area::-webkit-scrollbar-thumb:hover {
+            background: var(--mint-dark);
+        }
+    </style>
+</head>
+<body>
+    <h1>OCR文字提取工具</h1>
+    
+    <div class="upload-area" id="dropZone">
+        <p>将图片拖放到这里，或者</p>
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <button class="btn" onclick="document.getElementById('fileInput').click()">选择图片</button>
+        <p style="margin-top: 10px; color: #86868b; font-size: 14px;">支持直接粘贴图片 (Ctrl+V)</p>
+    </div>
+
+    <div class="loading" id="loading">
+        <p>正在处理中...</p>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <p style="font-size: 14px;" id="progressText">0%</p>
+        <p style="font-size: 12px; color: #666;">支持中英文混合识别</p>
+    </div>
+    
+    <textarea class="result-area" id="resultText" placeholder="识别结果将显示在这里..."></textarea>
+    
+    <div class="button-container">
+        <button class="btn" onclick="clearText()">清空</button>
+        <button class="btn" onclick="copyText()">复制</button>
+    </div>
+
+    <script>
+        // 初始化Tesseract和预加载模型
+        let worker = null;
+        
+        // 预加载模型
+        async function initializeWorker() {
+            if (!worker) {
+                worker = await Tesseract.createWorker({
+                    logger: progress => {
+                        console.log('Progress:', progress);
+                        const loading = document.getElementById('loading');
+                        const progressFill = document.getElementById('progressFill');
+                        const progressText = document.getElementById('progressText');
+                        
+                        // 更新进度显示
+                        let percentage = 0;
+                        switch (progress.status) {
+                            case 'loading language traineddata':
+                                percentage = progress.progress * 40;
+                                loading.children[0].textContent = '加载语言模型...';
+                                break;
+                            case 'initializing api':
+                                percentage = 40 + progress.progress * 30;
+                                loading.children[0].textContent = '初始化...';
+                                break;
+                            case 'recognizing text':
+                                percentage = 70 + progress.progress * 30;
+                                loading.children[0].textContent = '正在识别文字...';
+                                break;
+                        }
+                        
+                        // 更新进度条和百分比文本
+                        progressFill.style.width = `${percentage}%`;
+                        progressText.textContent = `${Math.round(percentage)}%`;
+                    }
+                });
+                
+                // 只加载简体中文
+                await worker.loadLanguage('chi_sim');
+                await worker.initialize('chi_sim');
+                
+                // 使用基础参数配置
+                await worker.setParameters({
+                    tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+                    tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,
+                    preserve_interword_spaces: '0',
+                    tessedit_char_blacklist: '|~_@#$%^&*+=<>\\/',
+                    tessedit_enable_dict_correction: '1',
+                    textord_heavy_nr: '0',
+                    textord_force_make_prop_words: '1',
+                    language_model_ngram_space_delimited: '0',
+                    tessedit_minimal_confidence: '60',
+                    lstm_choice_mode: '1'
+                });
+            }
+        }
+        
+        // 页面加载完成后立即初始化
+        window.addEventListener('load', initializeWorker);
+
+        // 修改图像预处理
+        function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // 保持原始分辨率，但限制最大尺寸
+                        const MAX_SIZE = 2000;
+                        if (width > MAX_SIZE || height > MAX_SIZE) {
+                            const ratio = Math.min(MAX_SIZE / width, MAX_SIZE / height);
+                            width = Math.round(width * ratio);
+                            height = Math.round(height * ratio);
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        
+                        // 简单的图像处理
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(0, 0, width, height);
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        canvas.toBlob((blob) => {
+                            resolve(blob);
+                        }, 'image/png', 1.0);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 修改文本处理部分
+        async function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('请上传图片文件！');
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            
+            try {
+                if (!worker) {
+                    await initializeWorker();
+                }
+                
+                const processedImage = await compressImage(file);
+                const { data: { text } } = await worker.recognize(processedImage);
+                
+                // 修改文本处理部分
+                let processedText = text
+                    // 第一步：保留所有需要的字符
+                    .replace(/[^\u4e00-\u9fa5a-zA-Z0-9，。！？；：、（）【】《》""''…—,.!?:;\n\s]/g, '')
+                    
+                    // 第二步：处理中文字符间的空格，但保留格式
+                    .split('\n')
+                    .map(line => {
+                        // 保存原始缩进
+                        const indentation = line.match(/^\s*/)[0];
+                        let processedLine = line.trim();
+                        
+                        return indentation + processedLine
+                            // 处理中文间的空格
+                            .replace(/(?<=[\u4e00-\u9fa5])\s+(?=[\u4e00-\u9fa5])/g, '')
+                            // 处理中英文混排
+                            .replace(/(?<=[\u4e00-\u9fa5])\s+(?=[a-zA-Z])/g, ' ')
+                            .replace(/(?<=[a-zA-Z])\s+(?=[\u4e00-\u9fa5])/g, ' ')
+                            // 保留英文单词间的空格
+                            .replace(/(?<=[a-zA-Z])\s+(?=[a-zA-Z])/g, ' ')
+                            // 处理标点符号
+                            .replace(/\s*([，。！？；：、）】》」』])\s*/g, '$1')
+                            .replace(/\s*([（【《「『])\s*/g, '$1')
+                            // 保持英文句点和标点
+                            .replace(/\s*([.!?])\s*(?=[A-Za-z])/g, '$1 ')
+                            .replace(/\s*([.!?])\s*(?=[\u4e00-\u9fa5])/g, '$1');
+                    })
+                    .join('\n')
+                    
+                    // 第三步：保持原始格式
+                    .replace(/^\s+|\s+$/g, '')          // 清理首尾空白
+                    .replace(/\n{3,}/g, '\n\n')         // 最多保留两个连续换行
+                    .trim();
+                
+                // 更新文本框内容并保持格式
+                const textarea = document.getElementById('resultText');
+                textarea.value = processedText;
+                textarea.style.height = 'auto';
+                textarea.style.height = (textarea.scrollHeight + 10) + 'px';
+            } catch (error) {
+                console.error('Recognition error:', error);
+                alert('识别失败，请重试！');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // 文件输入处理
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        // 拖放处理
+        const dropZone = document.getElementById('dropZone');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        // 替换复制文本的函数
+        function copyText() {
+            const textarea = document.getElementById('resultText');
+            // 使用现代的 Clipboard API
+            navigator.clipboard.writeText(textarea.value)
+                .then(() => {
+                    // 显示成功提示
+                    const originalText = textarea.value;
+                    textarea.value = '复制成功！';
+                    setTimeout(() => {
+                        textarea.value = originalText;
+                    }, 1000);
+                })
+                .catch(() => {
+                    alert('复制失败，请手动复制');
+                });
+        }
+
+        // 清空文本
+        function clearText() {
+            document.getElementById('resultText').value = '';
+        }
+
+        // 修改粘贴事件处理
+        document.addEventListener('paste', async (e) => {
+            // 获取剪贴板数据
+            const items = e.clipboardData.items;
+            
+            // 遍历所有项目
+            for (const item of items) {
+                // 如果是图片
+                if (item.type.includes('image')) {
+                    e.preventDefault();
+                    const file = item.getAsFile();
+                    console.log('Pasted image:', file); // 添加调试日志
+                    if (file) {
+                        try {
+                            await handleFile(file);
+                        } catch (error) {
+                            console.error('Error handling pasted image:', error);
+                            alert('图片处理失败，请重试');
+                        }
+                    }
+                    return;
+                }
+            }
+        });
+
+        // 修改文本框的粘贴事件，确保不影响图片粘贴
+        document.getElementById('resultText').addEventListener('paste', (e) => {
+            // 检查是否包含图片
+            const hasImage = Array.from(e.clipboardData.items).some(item => item.type.includes('image'));
+            if (!hasImage) {
+                // 如果不包含图片，允许默认的文本粘贴行为
+                return;
+            }
+            // 如果包含图片，让全局粘贴处理器处理
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html> 
