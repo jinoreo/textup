@@ -2,11 +2,17 @@
   "rewrites": [
     {
       "source": "/textup",
-      "destination": "/textup/index.html"
+      "destination": "/index.html"
     },
     {
       "source": "/textup/:path*",
-      "destination": "/textup/:path*"
+      "destination": "/index.html"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/",
+      "status": 404
     }
   ]
 } 
