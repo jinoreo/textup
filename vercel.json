@@ -1,13 +1,12 @@
 {
-  "routes": [
+  "rewrites": [
     {
-      "src": "/textup",
-      "dest": "/textup/index.html"
+      "source": "/textup",
+      "destination": "/textup/index.html"
     },
     {
-      "src": "/textup/(.*)",
-      "dest": "/$1"
+      "source": "/textup/:path*",
+      "destination": "/textup/:path*"
     }
-  ],
-  "cleanUrls": true
+  ]
 } 
