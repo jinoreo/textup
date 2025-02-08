@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/textup/:path*",
+      "source": "/textup",
       "destination": "/index.html"
     }
   ],
