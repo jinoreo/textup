@@ -1,16 +1,11 @@
 {
-  "rewrites": [
-    {
-      "source": "/textup",
-      "destination": "/index.html"
-    }
-  ],
   "routes": [
-    { 
-      "handle": "filesystem"
+    {
+      "src": "/textup",
+      "dest": "/index.html"
     },
     {
-      "src": "/.*",
+      "src": "/(.*)",
       "status": 404
     }
   ]
