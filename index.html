@@ -268,6 +268,55 @@
     </div>
 
     <script>
+        // 添加 Otsu 阈值算法函数
+        function getOtsuThreshold(data) {
+            // 计算灰度直方图
+            const histogram = new Array(256).fill(0);
+            let pixelCount = 0;
+            
+            // 统计每个灰度级别的像素数量
+            for (let i = 0; i < data.length; i += 4) {
+                const avg = Math.round((data[i] + data[i + 1] + data[i + 2]) / 3);
+                histogram[avg]++;
+                pixelCount++;
+            }
+            
+            let sumTotal = 0;
+            for (let i = 0; i < 256; i++) {
+                sumTotal += i * histogram[i];
+            }
+            
+            let sumBackground = 0;
+            let weightBackground = 0;
+            let weightForeground = 0;
+            let maxVariance = 0;
+            let threshold = 0;
+            
+            // 计算最佳阈值
+            for (let t = 0; t < 256; t++) {
+                weightBackground += histogram[t];
+                if (weightBackground === 0) continue;
+                
+                weightForeground = pixelCount - weightBackground;
+                if (weightForeground === 0) break;
+                
+                sumBackground += t * histogram[t];
+                
+                const meanBackground = sumBackground / weightBackground;
+                const meanForeground = (sumTotal - sumBackground) / weightForeground;
+                
+                const variance = weightBackground * weightForeground * 
+                                Math.pow(meanBackground - meanForeground, 2);
+                
+                if (variance > maxVariance) {
+                    maxVariance = variance;
+                    threshold = t;
+                }
+            }
+            
+            return threshold;
+        }
+
         // 修改 worker 初始化配置
         let worker = null;
         let isInitializing = false;
@@ -311,10 +360,13 @@
                     tessedit_char_blacklist: '|~_@#$%^&*+=<>\\/',
                     tessedit_enable_dict_correction: '1',
                     textord_heavy_nr: '0',
-                    textord_force_make_prop_words: '1',
+                    textord_force_make_prop_words: '0',
                     language_model_ngram_space_delimited: '0',
-                    tessedit_minimal_confidence: '65',
-                    lstm_choice_mode: '1'
+                    tessedit_minimal_confidence: '70',  // 提高置信度要求
+                    lstm_choice_mode: '2',  // 使用更严格的模式
+                    textord_noise_sizelimit: '0.2',
+                    edges_max_children_per_outline: '10',  // 减少边缘检测的干扰
+                    language_model_penalty_non_dict_word: '0.8'  // 提高非词典词惩罚
                 });
                 
                 console.log('Worker initialization completed successfully');
@@ -405,36 +457,25 @@
                 
                 // 修改文本处理部分
                 let processedText = text
-                    // 第一步：保留所有需要的字符
-                    .replace(/[^\u4e00-\u9fa5a-zA-Z0-9，。！？；：、（）【】《》""''…—,.!?:;\n\s]/g, '')
-                    
-                    // 第二步：处理中文字符间的空格，但保留格式
+                    // 只保留中英文、指定标点符号和换行
+                    .replace(/[^a-zA-Z\u4e00-\u9fa5，。！？；：、（）【】《》""''…—\n\s]/g, '')
+                    // 处理每一行
                     .split('\n')
                     .map(line => {
-                        // 保存原始缩进
-                        const indentation = line.match(/^\s*/)[0];
-                        let processedLine = line.trim();
+                        line = line.trim();
+                        // 检查是否包含有效字符（中英文）
+                        const validChars = line.match(/[a-zA-Z\u4e00-\u9fa5]/g) || [];
+                        if (validChars.length < 2) return '';
                         
-                        return indentation + processedLine
-                            // 处理中文间的空格
-                            .replace(/(?<=[\u4e00-\u9fa5])\s+(?=[\u4e00-\u9fa5])/g, '')
-                            // 处理中英文混排
-                            .replace(/(?<=[\u4e00-\u9fa5])\s+(?=[a-zA-Z])/g, ' ')
-                            .replace(/(?<=[a-zA-Z])\s+(?=[\u4e00-\u9fa5])/g, ' ')
-                            // 保留英文单词间的空格
-                            .replace(/(?<=[a-zA-Z])\s+(?=[a-zA-Z])/g, ' ')
-                            // 处理标点符号
-                            .replace(/\s*([，。！？；：、）】》」』])\s*/g, '$1')
-                            .replace(/\s*([（【《「『])\s*/g, '$1')
-                            // 保持英文句点和标点
-                            .replace(/\s*([.!?])\s*(?=[A-Za-z])/g, '$1 ')
-                            .replace(/\s*([.!?])\s*(?=[\u4e00-\u9fa5])/g, '$1');
+                        // 移除行首行尾的标点符号
+                        return line.replace(/^[，。！？；：、（）【】《》""''…—]+|[，。！？；：、（）【】《》""''…—]+$/g, '');
+                    })
+                    .filter(line => line.length > 0)  // 移除空行
+                    .filter((line, index, array) => {
+                        // 移除重复行
+                        return array.indexOf(line) === index;
                     })
                     .join('\n')
-                    
-                    // 第三步：保持原始格式
-                    .replace(/^\s+|\s+$/g, '')          // 清理首尾空白
-                    .replace(/\n{3,}/g, '\n\n')         // 最多保留两个连续换行
                     .trim();
                 
                 // 更新文本框内容并保持格式
@@ -557,22 +598,34 @@
                         let width = img.width;
                         let height = img.height;
                         
-                        // 保持原始分辨率，但限制最大尺寸
-                        const MAX_SIZE = 2000;
-                        if (width > MAX_SIZE || height > MAX_SIZE) {
-                            const ratio = Math.min(MAX_SIZE / width, MAX_SIZE / height);
-                            width = Math.round(width * ratio);
-                            height = Math.round(height * ratio);
-                        }
-
+                        // 保持原始分辨率
                         canvas.width = width;
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         
-                        // 简单的图像处理
+                        // 简化图像处理
                         ctx.fillStyle = 'white';
                         ctx.fillRect(0, 0, width, height);
+                        
+                        // 调整对比度和亮度
+                        ctx.filter = 'contrast(1.4) brightness(1.1)';
                         ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // 二值化处理
+                        const imageData = ctx.getImageData(0, 0, width, height);
+                        const data = imageData.data;
+                        
+                        // 使用 Otsu 算法计算阈值
+                        const threshold = getOtsuThreshold(data);
+                        
+                        // 应用二值化
+                        for (let i = 0; i < data.length; i += 4) {
+                            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                            const val = avg > threshold ? 255 : 0;
+                            data[i] = data[i + 1] = data[i + 2] = val;
+                        }
+                        
+                        ctx.putImageData(imageData, 0, 0);
                         
                         canvas.toBlob((blob) => {
                             resolve(blob);

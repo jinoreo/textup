@@ -1,0 +1,13 @@
+{
+  "routes": [
+    {
+      "src": "/textup",
+      "dest": "/textup/index.html"
+    },
+    {
+      "src": "/textup/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "cleanUrls": true
+} 
