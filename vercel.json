@@ -1,11 +1,11 @@
 {
   "routes": [
     {
-      "src": "/textup",
+      "src": "^/textup$",
       "dest": "/index.html"
     },
     {
-      "src": "/(.*)",
+      "src": "^/$",
       "status": 404
     }
   ]
