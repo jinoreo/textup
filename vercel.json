@@ -5,6 +5,10 @@
       "dest": "/index.html"
     },
     {
+      "src": "/citeease/(.*)",
+      "dest": "https://cite-ease.vercel.app/$1"
+    },
+    {
       "src": "^/$",
       "status": 404
     }
