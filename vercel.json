@@ -5,12 +5,19 @@
       "dest": "/index.html"
     },
     {
-      "src": "/citeease/(.*)",
-      "dest": "https://cite-ease.vercel.app/$1"
+      "src": "/citeease(.*)",
+      "dest": "https://cite-ease.vercel.app$1"
     },
     {
-      "src": "^/$",
+      "src": "^/$|^/www\\.vansun\\.top$",
       "status": 404
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/www.vansun.top",
+      "destination": "/",
+      "permanent": true
     }
   ]
 } 
