@@ -20,5 +20,20 @@
         "source": "/",
         "destination": "https://textup.vercel.app"
       }
+    ],
+    "headers": [
+      {
+        "source": "/citeease/(.*)",
+        "headers": [
+          {
+            "key": "X-Frame-Options",
+            "value": "SAMEORIGIN"
+          },
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          }
+        ]
+      }
     ]
   }
