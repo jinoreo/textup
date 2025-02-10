@@ -1,20 +1,32 @@
 {
     "routes": [
       {
-        "src": "^/textup$",
-        "dest": "/index.html"
+        "src": "^/textup/?$",
+        "status": 307,
+        "headers": {
+          "Location": "https://textup.vercel.app"
+        }
       },
       {
-        "src": "^/citeease$",
-        "dest": "https://cite-ease.vercel.app"
+        "src": "^/textup/(.+)$",
+        "status": 307,
+        "headers": {
+          "Location": "https://textup.vercel.app/$1"
+        }
       },
       {
-        "src": "^/citeease/(.*)$",
-        "dest": "https://cite-ease.vercel.app/$1"
+        "src": "^/citeease/?$",
+        "status": 307,
+        "headers": {
+          "Location": "https://cite-ease.vercel.app"
+        }
       },
       {
-        "src": "^/(?!textup$|citeease(?:/|$)).*$",
-        "status": 404
+        "src": "^/citeease/(.+)$",
+        "status": 307,
+        "headers": {
+          "Location": "https://cite-ease.vercel.app/$1"
+        }
       }
     ]
   }
