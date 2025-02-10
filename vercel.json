@@ -1,17 +1,16 @@
 {
-  "routes": [
-    {
-      "src": "^/textup$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^/citeease(/.*)?$",
-      "dest": "https://cite-ease.vercel.app$1"
-    },
-    {
-      "src": "^/$|^/www\\.vansun\\.top/?$",
-      "status": 404
-    }
-  ],
-  "trailingSlash": false
-} 
+    "routes": [
+      {
+        "src": "^/textup$",
+        "dest": "/index.html"
+      },
+      {
+        "src": "^/citeease(/.*)?$",
+        "dest": "https://cite-ease.vercel.app$1"
+      },
+      {
+        "src": "^/$",
+        "status": 404
+      }
+    ]
+  }
