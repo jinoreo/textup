@@ -10,11 +10,17 @@
       },
       {
         "src": "^/citeease/?$",
-        "dest": "https://cite-ease.vercel.app"
+        "dest": "https://cite-ease.vercel.app",
+        "headers": {
+          "x-forwarded-host": "www.vansun.top"
+        }
       },
       {
         "src": "^/citeease/(.+)$",
-        "dest": "https://cite-ease.vercel.app/$1"
+        "dest": "https://cite-ease.vercel.app/$1",
+        "headers": {
+          "x-forwarded-host": "www.vansun.top"
+        }
       }
     ]
   }
