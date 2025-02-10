@@ -5,20 +5,21 @@
         "dest": "https://textup.vercel.app"
       },
       {
-        "src": "^/textup/?$",
+        "src": "^/textup$",
         "dest": "https://textup.vercel.app"
       },
       {
-        "src": "^/textup/(.*)$",
+        "src": "^/textup/(.*)",
         "dest": "https://textup.vercel.app/$1"
       },
       {
-        "src": "^/citeease/?$",
+        "src": "^/citeease$",
         "dest": "https://cite-ease.vercel.app"
       },
       {
-        "src": "^/citeease/(.*)$",
+        "src": "^/citeease/(.*)",
         "dest": "https://cite-ease.vercel.app/$1"
       }
-    ]
+    ],
+    "cleanUrls": true
   }
