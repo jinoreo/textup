@@ -1,25 +1,24 @@
 {
-    "routes": [
+    "rewrites": [
       {
-        "src": "^/$",
-        "dest": "https://textup.vercel.app"
+        "source": "/textup",
+        "destination": "https://textup.vercel.app"
       },
       {
-        "src": "^/textup$",
-        "dest": "https://textup.vercel.app"
+        "source": "/textup/:path*",
+        "destination": "https://textup.vercel.app/:path*"
       },
       {
-        "src": "^/textup/(.*)",
-        "dest": "https://textup.vercel.app/$1"
+        "source": "/citeease",
+        "destination": "https://cite-ease.vercel.app"
       },
       {
-        "src": "^/citeease$",
-        "dest": "https://cite-ease.vercel.app"
+        "source": "/citeease/:path*",
+        "destination": "https://cite-ease.vercel.app/:path*"
       },
       {
-        "src": "^/citeease/(.*)",
-        "dest": "https://cite-ease.vercel.app/$1"
+        "source": "/",
+        "destination": "https://textup.vercel.app"
       }
-    ],
-    "cleanUrls": true
+    ]
   }
