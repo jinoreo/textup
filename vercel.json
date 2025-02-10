@@ -5,11 +5,15 @@
         "dest": "/index.html"
       },
       {
-        "src": "^/citeease(/.*)?$",
-        "dest": "https://cite-ease.vercel.app$1"
+        "src": "^/citeease$",
+        "dest": "https://cite-ease.vercel.app"
       },
       {
-        "src": "^/$",
+        "src": "^/citeease/(.*)$",
+        "dest": "https://cite-ease.vercel.app/$1"
+      },
+      {
+        "src": "^/(?!textup$|citeease(?:/|$)).*$",
         "status": 404
       }
     ]
