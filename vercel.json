@@ -1,26 +1,24 @@
 {
     "routes": [
       {
+        "src": "^/$",
+        "dest": "https://textup.vercel.app"
+      },
+      {
         "src": "^/textup/?$",
         "dest": "https://textup.vercel.app"
       },
       {
-        "src": "^/textup/(.+)$",
+        "src": "^/textup/(.*)$",
         "dest": "https://textup.vercel.app/$1"
       },
       {
         "src": "^/citeease/?$",
-        "dest": "https://cite-ease.vercel.app",
-        "headers": {
-          "x-forwarded-host": "www.vansun.top"
-        }
+        "dest": "https://cite-ease.vercel.app"
       },
       {
-        "src": "^/citeease/(.+)$",
-        "dest": "https://cite-ease.vercel.app/$1",
-        "headers": {
-          "x-forwarded-host": "www.vansun.top"
-        }
+        "src": "^/citeease/(.*)$",
+        "dest": "https://cite-ease.vercel.app/$1"
       }
     ]
   }
