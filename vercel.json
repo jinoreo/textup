@@ -9,15 +9,13 @@
       "dest": "https://cite-ease.vercel.app$1"
     },
     {
-      "src": "^/$|^/www\\.vansun\\.top$",
-      "status": 404
-    }
-  ],
-  "redirects": [
+      "src": "/www.vansun.top(.*)",
+      "status": 308,
+      "headers": { "Location": "$1" }
+    },
     {
-      "source": "/www.vansun.top",
-      "destination": "/",
-      "permanent": true
+      "src": "^/$",
+      "status": 404
     }
   ]
 } 
