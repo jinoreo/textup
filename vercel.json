@@ -25,10 +25,6 @@
         "destination": "https://capy-press.vercel.app/:path*"
       }
     ],
-    "routes": [
-      { "handle": "filesystem" },
-      { "src": "/capypress/(.*)", "dest": "/$1" }
-    ],
     "headers": [
       {
         "source": "/(.*)",
