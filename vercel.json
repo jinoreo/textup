@@ -18,11 +18,11 @@
       },
       {
         "source": "/capypress",
-        "destination": "capy-press.vercel.app"
+        "destination": "https://capy-press.vercel.app"
       },
       {
-        "source": "/capypress/:path*",
-        "destination": "https://capy-press.vercel.app/:path*"
+        "source": "/capypress/:match*", 
+        "destination": "https://capy-press.vercel.app/:match*"
       },
       {
         "source": "/",
