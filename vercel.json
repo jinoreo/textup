@@ -23,33 +23,18 @@
       {
         "source": "/capypress/:path*",
         "destination": "https://capy-press.vercel.app/:path*"
-      },
-      {
-        "source": "/",
-        "destination": "https://textup.vercel.app"
       }
+    ],
+    "routes": [
+      { "handle": "filesystem" },
+      { "src": "/capypress/(.*)", "dest": "/$1" }
     ],
     "headers": [
       {
-        "source": "/citeease/(.*)",
+        "source": "/(.*)",
         "headers": [
-          {
-            "key": "X-Frame-Options",
-            "value": "SAMEORIGIN"
-          },
-          {
-            "key": "Access-Control-Allow-Origin",
-            "value": "*"
-          }
-        ]
-      },
-      {
-        "source": "/capypress/(.*)",
-        "headers": [
-          {
-            "key": "Access-Control-Allow-Origin",
-            "value": "*"
-          }
+          { "key": "Access-Control-Allow-Origin", "value": "*" },
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
         ]
       }
     ],
