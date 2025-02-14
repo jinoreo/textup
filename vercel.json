@@ -17,12 +17,12 @@
         "destination": "https://cite-ease.vercel.app/:path*"
       },
       {
-        "source": "/citeease/js/:file",
-        "destination": "https://cite-ease.vercel.app/js/:file"
+        "source": "/scripts/:file",
+        "destination": "https://cite-ease.vercel.app/scripts/:file"
       },
       {
-        "source": "/citeease/css/:file",
-        "destination": "https://cite-ease.vercel.app/css/:file"
+        "source": "/styles/:file",
+        "destination": "https://cite-ease.vercel.app/styles/:file"
       },
       {
         "source": "/capypress",
