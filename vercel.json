@@ -17,6 +17,14 @@
         "destination": "https://cite-ease.vercel.app/:path*"
       },
       {
+        "source": "/citeease/js/:file",
+        "destination": "https://cite-ease.vercel.app/js/:file"
+      },
+      {
+        "source": "/citeease/css/:file",
+        "destination": "https://cite-ease.vercel.app/css/:file"
+      },
+      {
         "source": "/capypress",
         "destination": "https://capy-press.vercel.app"
       },
@@ -29,13 +37,13 @@
       {
         "source": "/(.*)",
         "headers": [
-          { 
-            "key": "Access-Control-Allow-Origin", 
-            "value": "*" 
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
           },
           {
             "key": "Cache-Control",
-            "value": "public, max-age=0, must-revalidate"
+            "value": "no-store, no-cache, must-revalidate"
           }
         ]
       },
